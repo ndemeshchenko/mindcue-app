@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "DALL·E 2025-03-01 14.41.54 - A top-down view of a clean and minimalistic flat 2D design featuring the letters 'MC' stamped onto a smooth surface. The background is a soft purple g.jpeg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -12,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "DALL·E 2025-03-01 14.41.54 - A top-down view of a clean and minimalistic flat 2D design featuring the letters 'MC' stamped onto a smooth surface. The background is a soft purple g 1.jpeg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -23,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "DALL·E 2025-03-01 14.41.54 - A top-down view of a clean and minimalistic flat 2D design featuring the letters 'MC' stamped onto a smooth surface. The background is a soft purple g 2.jpeg",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
