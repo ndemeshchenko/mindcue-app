@@ -5,6 +5,7 @@ struct StudyCardView: View {
     @State private var isFlipped = false
     @State private var offset: CGFloat = 0
     @State private var opacity: Double = 1
+    @State private var hasBeenFlippedOnce = false // Track if card has ever been flipped
     
     var onResponse: (Int) -> Void
     
@@ -39,7 +40,7 @@ struct StudyCardView: View {
             .offset(x: offset)
             .opacity(opacity)
             
-            // Response buttons container - always present but visibility changes
+            // Response buttons container - always present once revealed
             VStack(spacing: 16) {
                 Text("How well did you know this?")
                     .font(.headline)
@@ -55,8 +56,13 @@ struct StudyCardView: View {
                 .padding(.horizontal)
             }
             .padding(.bottom)
-            .opacity(isFlipped ? 1 : 0)
-            .animation(.easeInOut, value: isFlipped)
+            .opacity(hasBeenFlippedOnce ? 1 : 0) // Show buttons once card has been flipped at least once
+            .animation(.easeInOut, value: hasBeenFlippedOnce)
+        }
+        .onAppear {
+            // Ensure card starts in non-flipped state when it appears
+            isFlipped = false
+            hasBeenFlippedOnce = false
         }
     }
     
@@ -83,22 +89,33 @@ struct StudyCardView: View {
     
     // Flip the card with 3D animation
     private func flipCard() {
+        // Check if this is the first flip from question to answer
+        let isFirstFlipToAnswer = !isFlipped && !hasBeenFlippedOnce
+        
         withAnimation(.easeInOut(duration: 0.5)) {
             isFlipped.toggle()
+            
+            // Set hasBeenFlippedOnce to true if this is the first flip to answer
+            if isFirstFlipToAnswer {
+                hasBeenFlippedOnce = true
+            }
         }
     }
     
     // Reset the card to front side for the next card
     private func resetCard() {
+        // First make card invisible
+        withAnimation(.none) {
+            isFlipped = false
+            hasBeenFlippedOnce = false
+            offset = 0
+            opacity = 0
+        }
+        
+        // Ensure we're fully reset for the next card
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.none) {
-                isFlipped = false
-                offset = 0
-                opacity = 0 // Start invisible for the new card
-            }
-            
-            // Fade in the new card
-            withAnimation(.easeIn(duration: 0.3).delay(0.1)) {
+            // Then fade in the new card (in question state)
+            withAnimation(.easeIn(duration: 0.3)) {
                 opacity = 1
             }
         }
