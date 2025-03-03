@@ -44,6 +44,12 @@ struct StudyCardView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
                     }
+                    
+                    // Add invisible spacer to maintain consistent height
+                    if !isFlipped {
+                        Spacer()
+                            .frame(height: card.tags?.isEmpty ?? true ? 20 : 60)
+                    }
                 }
                 .padding()
                 .opacity(isFlipped ? 0 : 1)
@@ -90,27 +96,27 @@ struct StudyCardView: View {
             .onTapGesture {
                 flipCard()
             }
+            // Fixed height for card to ensure consistency
+            .frame(minHeight: 350)
             
-            // Response buttons (only visible when card is flipped)
-            if isFlipped {
-                VStack(spacing: 16) {
-                    Text("How well did you know this?")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    // Quality rating buttons
-                    HStack(spacing: 8) {
-                        QualityButton(quality: 0, label: "Blackout", color: .red, action: handleResponse)
-                        QualityButton(quality: 1, label: "Incorrect", color: .orange, action: handleResponse)
-                        QualityButton(quality: 2, label: "Hard", color: .yellow, action: handleResponse)
-                        QualityButton(quality: 3, label: "Perfect", color: .green, action: handleResponse)
-                    }
-                    .padding(.horizontal)
+            // Response buttons container - always present but visibility changes
+            VStack(spacing: 16) {
+                Text("How well did you know this?")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                // Quality rating buttons
+                HStack(spacing: 8) {
+                    QualityButton(quality: 0, label: "Blackout", color: .red, action: handleResponse)
+                    QualityButton(quality: 1, label: "Incorrect", color: .orange, action: handleResponse)
+                    QualityButton(quality: 2, label: "Hard", color: .yellow, action: handleResponse)
+                    QualityButton(quality: 3, label: "Perfect", color: .green, action: handleResponse)
                 }
-                .padding(.bottom)
-                .transition(.opacity)
-                .animation(.easeInOut, value: isFlipped)
+                .padding(.horizontal)
             }
+            .padding(.bottom)
+            .opacity(isFlipped ? 1 : 0)
+            .animation(.easeInOut, value: isFlipped)
         }
     }
     
