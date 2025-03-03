@@ -3,7 +3,9 @@ import SwiftUI
 struct StudyCardView: View {
     @ObservedObject var card: StudyCard
     @State private var isFlipped = false
-    @State private var animationAmount = 0.0
+    @State private var rotation: Double = 0
+    @State private var offset: CGFloat = 0
+    @State private var opacity: Double = 1
     
     var onResponse: (Int) -> Void
     
@@ -11,11 +13,15 @@ struct StudyCardView: View {
         VStack {
             // Card content
             ZStack {
-                // Card background
+                // Card background with 3D rotation
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color(.systemBackground))
                     .shadow(radius: 10)
                     .padding()
+                    .rotation3DEffect(
+                        .degrees(rotation),
+                        axis: (x: 0.0, y: 1.0, z: 0.0)
+                    )
                 
                 // Front content (question)
                 VStack(spacing: 20) {
@@ -52,8 +58,11 @@ struct StudyCardView: View {
                     }
                 }
                 .padding()
-                .opacity(isFlipped ? 0 : 1)
-                .animation(.easeInOut(duration: 0.3), value: isFlipped)
+                .rotation3DEffect(
+                    .degrees(rotation),
+                    axis: (x: 0.0, y: 1.0, z: 0.0)
+                )
+                .opacity(rotation < 90 ? 1 : 0) // Only visible when rotation is less than 90 degrees
                 
                 // Back content (answer)
                 VStack(spacing: 20) {
@@ -90,14 +99,19 @@ struct StudyCardView: View {
                     }
                 }
                 .padding()
-                .opacity(isFlipped ? 1 : 0)
-                .animation(.easeInOut(duration: 0.3), value: isFlipped)
+                .rotation3DEffect(
+                    .degrees(rotation - 180),  // Offset by 180 degrees to appear on back
+                    axis: (x: 0.0, y: 1.0, z: 0.0)
+                )
+                .opacity(rotation >= 90 ? 1 : 0) // Only visible when rotation is 90 degrees or more
             }
             .onTapGesture {
                 flipCard()
             }
             // Fixed height for card to ensure consistency
             .frame(minHeight: 350)
+            .offset(x: offset)
+            .opacity(opacity)
             
             // Response buttons container - always present but visibility changes
             VStack(spacing: 16) {
@@ -124,22 +138,51 @@ struct StudyCardView: View {
     private func handleResponse(quality: Int) {
         card.hasBeenReviewed = true
         card.lastResponseQuality = quality
-        onResponse(quality)
-        resetCard()
+        
+        // Perform swipe animation
+        let direction: CGFloat = quality > 1 ? 1 : -1 // Swipe right for good, left for poor
+        let swipeDistance: CGFloat = UIScreen.main.bounds.width * 1.5 * direction
+        
+        withAnimation(.easeOut(duration: 0.4)) {
+            offset = swipeDistance
+            opacity = 0
+        }
+        
+        // Wait for animation to complete, then call onResponse and reset
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            onResponse(quality)
+            resetCard()
+        }
     }
     
-    // Flip the card with animation
+    // Flip the card with 3D animation
     private func flipCard() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isFlipped.toggle()
+        let animationDuration = 0.5
+        
+        withAnimation(.easeInOut(duration: animationDuration)) {
+            // Animate to 180 degrees for a full flip
+            rotation = isFlipped ? 0 : 180
+            
+            // Update isFlipped state mid-way through the animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + (animationDuration / 2)) {
+                isFlipped.toggle()
+            }
         }
     }
     
     // Reset the card to front side for the next card
     private func resetCard() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.easeInOut(duration: 0.0)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.none) {
                 isFlipped = false
+                rotation = 0
+                offset = 0
+                opacity = 0 // Start invisible for the new card
+            }
+            
+            // Fade in the new card
+            withAnimation(.easeIn(duration: 0.3).delay(0.1)) {
+                opacity = 1
             }
         }
     }
