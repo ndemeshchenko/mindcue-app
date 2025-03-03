@@ -63,7 +63,9 @@ class StudyService: ObservableObject {
                 self.currentPlan = StudyingPlan(
                     deckId: deckId,
                     sessionId: sessionResponse.sessionId,
-                    totalCards: sessionResponse.totalCards
+                    totalCards: sessionResponse.totalCards,
+                    newCards: sessionResponse.newCards,
+                    reviewCards: sessionResponse.reviewCards
                 )
                 self.logger.info("Created new study session with ID: \(sessionResponse.sessionId)")
                 
@@ -76,21 +78,6 @@ class StudyService: ObservableObject {
             await MainActor.run {
                 self.error = error
                 self.logger.error("Failed to start study session: \(error.localizedDescription)")
-                
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .keyNotFound(let key, let context):
-                        self.logger.error("Key not found: \(key.stringValue), context: \(context.debugDescription)")
-                    case .valueNotFound(let type, let context):
-                        self.logger.error("Value not found: \(type), context: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
-                        self.logger.error("Type mismatch: \(type), context: \(context.debugDescription)")
-                    case .dataCorrupted(let context):
-                        self.logger.error("Data corrupted: \(context.debugDescription)")
-                    @unknown default:
-                        self.logger.error("Unknown decoding error")
-                    }
-                }
             }
         }
         
@@ -721,6 +708,8 @@ struct SessionResponse: Codable {
     let sessionId: String
     let deckId: String
     let totalCards: Int
+    let newCards: Int
+    let reviewCards: Int
     let message: String?
     
     // Static logger for debugging
@@ -762,6 +751,21 @@ struct SessionResponse: Codable {
         
         totalCards = try dataContainer.decode(Int.self, forKey: .totalCards)
         
+        // Get new cards and review cards (with fallbacks if they're not present)
+        if let count = try? dataContainer.decode(Int.self, forKey: .newCards) {
+            newCards = count
+        } else {
+            newCards = 0
+            SessionResponse.logger.warning("newCards not found in API response, defaulting to 0")
+        }
+        
+        if let count = try? dataContainer.decode(Int.self, forKey: .reviewCards) {
+            reviewCards = count
+        } else {
+            reviewCards = 0
+            SessionResponse.logger.warning("reviewCards not found in API response, defaulting to 0")
+        }
+        
         // Try to decode message from data container, or use top-level message
         let dataMessage = try dataContainer.decodeIfPresent(String.self, forKey: .message)
         message = dataMessage ?? topLevelMessage
@@ -771,9 +775,14 @@ struct SessionResponse: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(success, forKey: .success)
-        try container.encodeIfPresent(message, forKey: .message)
         
-        // We don't need to encode the nested structure for our internal use
+        var dataContainer = container.nestedContainer(keyedBy: DataCodingKeys.self, forKey: .data)
+        try dataContainer.encode(sessionId, forKey: .sessionId)
+        try dataContainer.encode(deckId, forKey: .deckId)
+        try dataContainer.encode(totalCards, forKey: .totalCards)
+        try dataContainer.encode(newCards, forKey: .newCards)
+        try dataContainer.encode(reviewCards, forKey: .reviewCards)
+        try dataContainer.encodeIfPresent(message, forKey: .message)
     }
 }
 

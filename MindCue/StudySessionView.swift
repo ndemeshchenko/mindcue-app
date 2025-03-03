@@ -34,10 +34,49 @@ struct StudySessionView: View {
                             .progressViewStyle(LinearProgressViewStyle())
                             .padding(.horizontal)
                         
-                        // Progress text
-                        Text("\(plan.cardsReviewed)/\(plan.totalCards) cards")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        // Card counters - now showing new cards and review cards
+                        HStack(spacing: 16) {
+                            // New cards counter
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.blue)
+                                    .font(.caption)
+                                Text("New: \(plan.newCards)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            // Divider
+                            Rectangle()
+                                .frame(width: 1, height: 12)
+                                .foregroundColor(.gray.opacity(0.3))
+                            
+                            // Review cards counter
+                            HStack(spacing: 4) {
+                                Image(systemName: "repeat")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                                Text("Review: \(plan.reviewCards)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            // Divider
+                            Rectangle()
+                                .frame(width: 1, height: 12)
+                                .foregroundColor(.gray.opacity(0.3))
+                            
+                            // Total progress
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                                Text("\(plan.cardsReviewed)/\(plan.totalCards)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.top, 4)
                     }
                 }
                 .padding()

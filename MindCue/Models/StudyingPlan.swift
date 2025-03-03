@@ -15,12 +15,16 @@ class StudyingPlan: ObservableObject {
     @Published var cardsReviewed: Int = 0
     @Published var correctResponses: Int = 0
     @Published var incorrectResponses: Int = 0
+    @Published var newCards: Int = 0
+    @Published var reviewCards: Int = 0
     
-    init(deckId: String, sessionId: String, totalCards: Int, cardsReviewed: Int = 0, correctResponses: Int = 0, incorrectResponses: Int = 0, startTime: Date = Date(), isSessionComplete: Bool = false) {
+    init(deckId: String, sessionId: String, totalCards: Int, newCards: Int = 0, reviewCards: Int = 0, cardsReviewed: Int = 0, correctResponses: Int = 0, incorrectResponses: Int = 0, startTime: Date = Date(), isSessionComplete: Bool = false) {
         self.sessionId = sessionId
         self.deckId = deckId
         self.startTime = startTime
         self.totalCards = totalCards
+        self.newCards = newCards
+        self.reviewCards = reviewCards
         self.cardsReviewed = cardsReviewed
         self.correctResponses = correctResponses
         self.incorrectResponses = incorrectResponses
@@ -43,7 +47,9 @@ class StudyingPlan: ObservableObject {
             totalCards: totalCards,
             cardsReviewed: cardsReviewed,
             correctResponses: correctResponses,
-            incorrectResponses: incorrectResponses
+            incorrectResponses: incorrectResponses,
+            newCards: newCards,
+            reviewCards: reviewCards
         )
     }
 }
@@ -90,6 +96,8 @@ struct SessionSummary: Codable, Identifiable {
     let cardsReviewed: Int
     let correctResponses: Int
     let incorrectResponses: Int
+    let newCards: Int
+    let reviewCards: Int
     
     var accuracy: Double {
         guard cardsReviewed > 0 else { return 0 }
@@ -100,7 +108,7 @@ struct SessionSummary: Codable, Identifiable {
         return endTime.timeIntervalSince(startTime)
     }
     
-    init(sessionId: String, deckId: String, startTime: Date, endTime: Date, totalCards: Int, cardsReviewed: Int, correctResponses: Int, incorrectResponses: Int) {
+    init(sessionId: String, deckId: String, startTime: Date, endTime: Date, totalCards: Int, cardsReviewed: Int, correctResponses: Int, incorrectResponses: Int, newCards: Int = 0, reviewCards: Int = 0) {
         self.id = UUID()
         self.sessionId = sessionId
         self.deckId = deckId
@@ -110,5 +118,7 @@ struct SessionSummary: Codable, Identifiable {
         self.cardsReviewed = cardsReviewed
         self.correctResponses = correctResponses
         self.incorrectResponses = incorrectResponses
+        self.newCards = newCards
+        self.reviewCards = reviewCards
     }
 } 
