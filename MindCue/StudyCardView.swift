@@ -6,6 +6,7 @@ struct StudyCardView: View {
     @State private var offset: CGFloat = 0
     @State private var opacity: Double = 1
     @State private var hasBeenFlippedOnce = false // Track if card has ever been flipped
+    @State private var buttonsOpacity: Double = 1 // Separate opacity for buttons
     
     var onResponse: (Int) -> Void
     
@@ -56,13 +57,14 @@ struct StudyCardView: View {
                 .padding(.horizontal)
             }
             .padding(.bottom)
-            .opacity(hasBeenFlippedOnce ? 1 : 0) // Show buttons once card has been flipped at least once
+            .opacity(hasBeenFlippedOnce ? buttonsOpacity : 0) // Show buttons once card has been flipped at least once
             .animation(.easeInOut, value: hasBeenFlippedOnce)
         }
         .onAppear {
             // Ensure card starts in non-flipped state when it appears
             isFlipped = false
             hasBeenFlippedOnce = false
+            buttonsOpacity = 1
         }
     }
     
@@ -75,9 +77,11 @@ struct StudyCardView: View {
         let direction: CGFloat = quality > 1 ? 1 : -1 // Swipe right for good, left for poor
         let swipeDistance: CGFloat = UIScreen.main.bounds.width * 1.5 * direction
         
+        // Animate card swipe and buttons fade out simultaneously
         withAnimation(.easeOut(duration: 0.4)) {
             offset = swipeDistance
             opacity = 0
+            buttonsOpacity = 0 // Fade out buttons at the same time
         }
         
         // Wait for animation to complete, then call onResponse and reset
@@ -110,6 +114,7 @@ struct StudyCardView: View {
             hasBeenFlippedOnce = false
             offset = 0
             opacity = 0
+            buttonsOpacity = 1 // Reset button opacity for next card
         }
         
         // Ensure we're fully reset for the next card
