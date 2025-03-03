@@ -297,7 +297,7 @@ struct StudySessionView: View {
             // Start the study session when the view appears
             await studyService.startStudySession(deckId: deckId)
         }
-        .onChange(of: studyService.authenticationFailed) { newValue in
+        .onChange(of: studyService.authenticationFailed) { oldValue, newValue in
             if newValue {
                 showingAuthAlert = true
             }
