@@ -16,6 +16,25 @@ struct AuthResponse: Codable {
     let success: Bool
     let message: String?
     let token: String?
+    let data: AuthResponseData?
+    
+    // Custom decoding to handle both direct token and nested token in data
+    var effectiveToken: String? {
+        return token ?? data?.token
+    }
+}
+
+struct AuthResponseData: Codable {
+    let token: String
+    let user: UserData?
+}
+
+struct UserData: Codable {
+    let _id: String
+    let email: String
+    let role: String
+    let createdAt: String
+    let updatedAt: String
 }
 
 class AuthService: ObservableObject {
@@ -89,7 +108,7 @@ class AuthService: ObservableObject {
             
             print("Decoding successful response")
             let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
-            guard let token = authResponse.token else {
+            guard let token = authResponse.effectiveToken else {
                 print("No token in response")
                 throw AuthError.serverError("No token received")
             }
@@ -167,6 +186,11 @@ class AuthService: ObservableObject {
             
             print("HTTP status code: \(httpResponse.statusCode)")
             
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Raw response: \(responseString)")
+            }
+            
             if httpResponse.statusCode != 200 && httpResponse.statusCode != 201 {
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("Error response: \(responseString)")
@@ -180,7 +204,9 @@ class AuthService: ObservableObject {
             
             print("Decoding successful response")
             let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
-            guard let token = authResponse.token else {
+            print("Decoded response - success: \(authResponse.success), direct token: \(authResponse.token != nil), data token: \(authResponse.data?.token != nil)")
+            
+            guard let token = authResponse.effectiveToken else {
                 print("No token in response")
                 throw AuthError.serverError("No token received")
             }

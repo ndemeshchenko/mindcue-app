@@ -326,10 +326,32 @@ class StudyService: ObservableObject {
                 
                 // Try to parse the response
                 do {
-                    let sessionResponse = try JSONDecoder().decode(SessionResponse.self, from: data)
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .useDefaultKeys
+                    
+                    logger.debug("Attempting to decode SessionResponse")
+                    let sessionResponse = try decoder.decode(SessionResponse.self, from: data)
+                    logger.info("Successfully decoded SessionResponse with sessionId: \(sessionResponse.sessionId)")
                     return sessionResponse
                 } catch {
                     logger.error("Failed to decode session response: \(error.localizedDescription)")
+                    
+                    // Provide more detailed error information
+                    if let decodingError = error as? DecodingError {
+                        switch decodingError {
+                        case .keyNotFound(let key, let context):
+                            logger.error("Key not found: \(key.stringValue), context: \(context.debugDescription)")
+                        case .valueNotFound(let type, let context):
+                            logger.error("Value not found: \(type), context: \(context.debugDescription)")
+                        case .typeMismatch(let type, let context):
+                            logger.error("Type mismatch: \(type), context: \(context.debugDescription)")
+                        case .dataCorrupted(let context):
+                            logger.error("Data corrupted: \(context.debugDescription)")
+                        @unknown default:
+                            logger.error("Unknown decoding error")
+                        }
+                    }
+                    
                     logger.error("Response data: \(responseString)")
                     throw error
                 }
@@ -713,18 +735,12 @@ struct SessionResponse: Codable {
     
     // Nested CodingKeys for data object
     enum DataCodingKeys: String, CodingKey {
-        case studyingPlan
-        case session
-    }
-    
-    // Nested CodingKeys for studyingPlan and session objects
-    enum PlanSessionCodingKeys: String, CodingKey {
-        case id
+        case sessionId
         case deckId
         case totalCards
-        case cards
         case newCards
         case reviewCards
+        case message
     }
     
     init(from decoder: Decoder) throws {
@@ -733,26 +749,22 @@ struct SessionResponse: Codable {
         // Decode success
         success = try container.decode(Bool.self, forKey: .success)
         
-        // Try to decode message if present
-        message = try container.decodeIfPresent(String.self, forKey: .message)
+        // Try to decode top-level message if present
+        let topLevelMessage = try container.decodeIfPresent(String.self, forKey: .message)
         
         // Access the data container
         let dataContainer = try container.nestedContainer(keyedBy: DataCodingKeys.self, forKey: .data)
         
-        // Access the session container
-        let sessionContainer = try dataContainer.nestedContainer(keyedBy: PlanSessionCodingKeys.self, forKey: .session)
+        // Get values directly from the data container
+        sessionId = try dataContainer.decode(String.self, forKey: .sessionId)
         
-        // Get the session ID from the session container
-        sessionId = try sessionContainer.decode(String.self, forKey: .id)
-//        Self.logger.debug("Found sessionId: \(sessionId)")
+        deckId = try dataContainer.decode(String.self, forKey: .deckId)
         
-        // Get the deck ID from the session container
-        deckId = try sessionContainer.decode(String.self, forKey: .deckId)
-//        Self.logger.debug("Found deckId: \(deckId)")
+        totalCards = try dataContainer.decode(Int.self, forKey: .totalCards)
         
-        // Get the total cards from the session container
-        totalCards = try sessionContainer.decode(Int.self, forKey: .totalCards)
-//        Self.logger.debug("Found totalCards: \(totalCards)")
+        // Try to decode message from data container, or use top-level message
+        let dataMessage = try dataContainer.decodeIfPresent(String.self, forKey: .message)
+        message = dataMessage ?? topLevelMessage
     }
     
     // Add encode method to conform to Encodable
@@ -762,7 +774,6 @@ struct SessionResponse: Codable {
         try container.encodeIfPresent(message, forKey: .message)
         
         // We don't need to encode the nested structure for our internal use
-        // but we could if needed
     }
 }
 
@@ -803,7 +814,6 @@ struct CardData: Codable {
         
         // Decode id
         id = try container.decode(String.self, forKey: .id)
-//        Self.logger.debug("Decoding card with ID: \(id)")
         
         // For now, we'll set a placeholder deckId
         // This will be set by the parent object
@@ -815,37 +825,26 @@ struct CardData: Codable {
             
             // Use Word as front
             front = try fieldsContainer.decode(String.self, forKey: .Word)
-//            Self.logger.debug("Decoded front: \(front)")
             
             // Use Definition as back
             back = try fieldsContainer.decode(String.self, forKey: .Definition)
-//            Self.logger.debug("Decoded back: \(back)")
             
             // Use Dutch and English as examples
             do {
                 let dutch = try fieldsContainer.decode(String.self, forKey: .Dutch)
                 let english = try fieldsContainer.decode(String.self, forKey: .English)
                 examples = [dutch, english]
-                Self.logger.debug("Decoded examples from Dutch and English fields")
             } catch {
-                Self.logger.warning("Failed to decode Dutch or English fields: \(error.localizedDescription)")
                 examples = nil
             }
         } catch {
-            Self.logger.error("Failed to decode fields: \(error.localizedDescription)")
             throw error
         }
         
         // Decode tags
         do {
             tags = try container.decodeIfPresent([String].self, forKey: .tags)
-            if let tagCount = tags?.count {
-                Self.logger.debug("Decoded \(tagCount) tags")
-            } else {
-                Self.logger.debug("No tags found")
-            }
         } catch {
-            Self.logger.warning("Failed to decode tags: \(error.localizedDescription)")
             tags = nil
         }
         
@@ -983,13 +982,10 @@ struct NextCardResponse: Codable {
         // Extract the cardIndex if present - handle both String and Int types
         if let indexAsString = try? dataContainer.decodeIfPresent(String.self, forKey: .cardIndex) {
             cardIndex = indexAsString
-            Self.logger.debug("Decoded cardIndex as String: \(indexAsString)")
         } else if let indexAsInt = try? dataContainer.decodeIfPresent(Int.self, forKey: .cardIndex) {
             cardIndex = String(indexAsInt)
-            Self.logger.debug("Decoded cardIndex as Int: \(indexAsInt), converted to String: \(String(indexAsInt))")
         } else {
             cardIndex = nil
-            Self.logger.debug("No cardIndex found in response")
         }
         
         // Decode the card if present
@@ -1000,13 +996,10 @@ struct NextCardResponse: Codable {
                     cardData.deckId = deckId
                 }
                 card = cardData
-                Self.logger.debug("Successfully decoded card with ID: \(cardData.id)")
             } else {
                 card = nil
-                Self.logger.debug("No card data found in response")
             }
         } catch {
-            Self.logger.error("Failed to decode card data: \(error.localizedDescription)")
             card = nil
         }
         
@@ -1022,13 +1015,10 @@ struct NextCardResponse: Codable {
                     totalCards: totalCards,
                     remainingCards: totalCards - cardsReviewed
                 )
-                Self.logger.debug("Successfully decoded progress: \(cardsReviewed)/\(totalCards)")
             } else {
                 progress = nil
-                Self.logger.debug("No progress data found in response")
             }
         } catch {
-            Self.logger.error("Failed to decode progress data: \(error.localizedDescription)")
             progress = nil
         }
     }
