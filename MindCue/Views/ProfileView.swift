@@ -146,6 +146,8 @@ struct ProfileHeaderView: View {
 // MARK: - Recent Activity View
 struct RecentActivityView: View {
     let plan: StudyPlan
+    @State private var showingStudySession = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -176,7 +178,7 @@ struct RecentActivityView: View {
             }
             
             Button(action: {
-                // Navigate to this deck
+                showingStudySession = true
             }) {
                 Text("Continue Studying")
                     .font(.subheadline)
@@ -194,6 +196,11 @@ struct RecentActivityView: View {
         .background(Color(.systemBackground))
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .fullScreenCover(isPresented: $showingStudySession) {
+            NavigationView {
+                StudySessionView(deckId: plan.deckId._id, deckName: plan.deckName)
+            }
+        }
     }
 }
 
