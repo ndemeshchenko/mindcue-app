@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var isSideMenuShowing = false
     @State private var showSignUp = false
     @State private var showSignIn = false
+    @State private var showProfile = false
     
     var body: some View {
         NavigationStack {
@@ -96,8 +97,10 @@ struct ContentView: View {
                         isAuthenticated: $authService.isAuthenticated,
                         showSignUp: $showSignUp,
                         showSignIn: $showSignIn,
+                        showProfile: $showProfile,
                         signOut: authService.signOut
                     )
+                    .environmentObject(authService)
                     .transition(.move(edge: .leading))
                 }
             }
@@ -121,6 +124,10 @@ struct ContentView: View {
                     isPresented: $showSignIn,
                     isAuthenticated: $authService.isAuthenticated
                 )
+            }
+            .fullScreenCover(isPresented: $showProfile) {
+                ProfileView()
+                    .environmentObject(authService)
             }
             .onAppear {
                 print("ContentView appeared, authentication state: \(authService.isAuthenticated)")

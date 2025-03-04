@@ -6,6 +6,8 @@ struct SideMenuView: View {
     @Binding var isAuthenticated: Bool
     @Binding var showSignUp: Bool
     @Binding var showSignIn: Bool
+    @Binding var showProfile: Bool
+    @EnvironmentObject var authService: AuthService
     var signOut: () -> Void
     
     var body: some View {
@@ -40,18 +42,33 @@ struct SideMenuView: View {
                     
                     // Menu items
                     if isAuthenticated {
-                        MenuButton(icon: "person.fill", title: "Profile") {
-                            // Handle profile action
+                        Button {
                             withAnimation {
                                 isShowing = false
                             }
+                            // Simple delay then show profile from parent
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showProfile = true
+                            }
+                        } label: {
+                            HStack(spacing: 16) {
+                                Image(systemName: "person.fill")
+                                    .frame(width: 24)
+                                Text("Profile")
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 12)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                        
                         MenuButton(icon: "gear", title: "Settings") {
-                            // Handle settings action
                             withAnimation {
                                 isShowing = false
                             }
                         }
+                        
                         MenuButton(icon: "arrow.right.square", title: "Sign Out") {
                             signOut()
                             withAnimation {
@@ -60,15 +77,22 @@ struct SideMenuView: View {
                         }
                     } else {
                         MenuButton(icon: "person.fill.badge.plus", title: "Sign Up") {
-                            showSignUp = true
                             withAnimation {
                                 isShowing = false
                             }
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                showSignUp = true
+                            }
                         }
+                        
                         MenuButton(icon: "person.fill", title: "Sign In") {
-                            showSignIn = true
                             withAnimation {
                                 isShowing = false
+                            }
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                showSignIn = true
                             }
                         }
                     }
@@ -105,5 +129,7 @@ struct MenuButton: View {
             .padding(.vertical, 12)
         }
         .foregroundColor(.primary)
+        .contentShape(Rectangle())
+        .buttonStyle(PlainButtonStyle())
     }
 } 
