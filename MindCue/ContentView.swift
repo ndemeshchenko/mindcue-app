@@ -91,23 +91,19 @@ struct ContentView: View {
                 .padding()
                 
                 // Add this at the end of the ZStack
-                if isSideMenuShowing {
-                    SideMenuView(
-                        isShowing: $isSideMenuShowing,
-                        isAuthenticated: $authService.isAuthenticated,
-                        showSignUp: $showSignUp,
-                        showSignIn: $showSignIn,
-                        showProfile: $showProfile,
-                        signOut: authService.signOut
-                    )
-                    .environmentObject(authService)
-                    .transition(.move(edge: .leading))
-                }
+                SideMenuView(
+                    isShowing: $isSideMenuShowing,
+                    isAuthenticated: $authService.isAuthenticated,
+                    showSignUp: $showSignUp,
+                    showSignIn: $showSignIn,
+                    showProfile: $showProfile,
+                    signOut: authService.signOut
+                )
+                .environmentObject(authService)
             }
             .navigationBarItems(leading: Button(action: {
-                withAnimation {
-                    isSideMenuShowing.toggle()
-                }
+                // Just toggle the flag, the SideMenuView will handle the animations
+                isSideMenuShowing.toggle()
             }) {
                 Image(systemName: "line.horizontal.3")
                     .font(.title2)

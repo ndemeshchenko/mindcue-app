@@ -8,21 +8,21 @@ struct SideMenuView: View {
     @Binding var showSignIn: Bool
     @Binding var showProfile: Bool
     @EnvironmentObject var authService: AuthService
+    @State private var showContent = false
     var signOut: () -> Void
     
     var body: some View {
         ZStack {
-            // Dimmed background
-            Color.black.opacity(0.3)
+            // Dimmed background only handles opacity transition
+            Color.black.opacity(isShowing ? 0.3 : 0)
                 .ignoresSafeArea()
+                .animation(.easeIn(duration: 0.15), value: isShowing)
                 .onTapGesture {
-                    withAnimation {
-                        isShowing = false
-                    }
+                    closeMenu()
                 }
             
-            // Menu content
-            HStack {
+            // Menu content only handles sliding
+            HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
                     // Header
                     VStack(alignment: .leading, spacing: 12) {
@@ -43,9 +43,8 @@ struct SideMenuView: View {
                     // Menu items
                     if isAuthenticated {
                         Button {
-                            withAnimation {
-                                isShowing = false
-                            }
+                            closeMenu()
+                            
                             // Simple delay then show profile from parent
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 showProfile = true
@@ -64,34 +63,26 @@ struct SideMenuView: View {
                         .contentShape(Rectangle())
                         
                         MenuButton(icon: "gear", title: "Settings") {
-                            withAnimation {
-                                isShowing = false
-                            }
+                            closeMenu()
                         }
                         
                         MenuButton(icon: "arrow.right.square", title: "Sign Out") {
                             signOut()
-                            withAnimation {
-                                isShowing = false
-                            }
+                            closeMenu()
                         }
                     } else {
                         MenuButton(icon: "person.fill.badge.plus", title: "Sign Up") {
-                            withAnimation {
-                                isShowing = false
-                            }
+                            closeMenu()
                             
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 showSignUp = true
                             }
                         }
                         
                         MenuButton(icon: "person.fill", title: "Sign In") {
-                            withAnimation {
-                                isShowing = false
-                            }
+                            closeMenu()
                             
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 showSignIn = true
                             }
                         }
@@ -100,13 +91,32 @@ struct SideMenuView: View {
                     Spacer()
                 }
                 .frame(width: 270)
-                .background(
-                    Color(.systemBackground)
-                        .ignoresSafeArea()
-                )
-                .offset(x: isShowing ? 0 : -270)
+                .background(Color(.systemBackground))
+                .offset(x: showContent ? 0 : -270)
+                .animation(.easeOut(duration: 0.25).delay(0.1), value: showContent)
                 
                 Spacer()
+            }
+        }
+        .onChange(of: isShowing) { newValue in
+            if newValue {
+                // First show the menu (with delay to let overlay fade in first)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showContent = true
+                }
+            } else {
+                // When closing, hide content first
+                showContent = false
+            }
+        }
+    }
+    
+    private func closeMenu() {
+        showContent = false
+        // Delay the isShowing update until after the menu slide animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation {
+                isShowing = false
             }
         }
     }
