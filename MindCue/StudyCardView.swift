@@ -49,10 +49,10 @@ struct StudyCardView: View {
                 
                 // Quality rating buttons
                 HStack(spacing: 8) {
-                    QualityButton(quality: 0, label: "Blackout", color: .red, action: handleResponse)
-                    QualityButton(quality: 1, label: "Incorrect", color: .orange, action: handleResponse)
-                    QualityButton(quality: 2, label: "Hard", color: .yellow, action: handleResponse)
-                    QualityButton(quality: 3, label: "Perfect", color: .green, action: handleResponse)
+                    QualityButton(quality: 0, label: "Again", color: .red, action: handleResponse)
+                    QualityButton(quality: 1, label: "Hard", color: .orange, action: handleResponse)
+                    QualityButton(quality: 2, label: "Good", color: .yellow, action: handleResponse)
+                    QualityButton(quality: 3, label: "Easy", color: .green, action: handleResponse)
                 }
                 .padding(.horizontal)
             }

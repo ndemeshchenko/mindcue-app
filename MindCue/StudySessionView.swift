@@ -165,26 +165,63 @@ struct StudySessionView: View {
                         
                         if let stats = studyService.sessionStats {
                             VStack(spacing: 10) {
-                                StatRow(
-                                    icon: "checkmark.circle",
-                                    title: "Correct",
-                                    value: "\(stats.correctResponses)",
-                                    color: .green
-                                )
-                                
-                                StatRow(
-                                    icon: "xmark.circle",
-                                    title: "Incorrect",
-                                    value: "\(stats.incorrectResponses)",
-                                    color: .red
-                                )
-                                
-                                StatRow(
-                                    icon: "percent",
-                                    title: "Accuracy",
-                                    value: "\(Int(stats.accuracy * 100))%",
-                                    color: .blue
-                                )
+                                if let qualityStats = stats.qualityStats {
+                                    VStack(alignment: .leading, spacing: 15) {
+                                        Text("Response Quality")
+                                            .font(.headline)
+                                            .padding(.bottom, 5)
+                                        
+                                        StatRow(
+                                            icon: "exclamationmark.circle",
+                                            title: "Again",
+                                            value: "\(qualityStats.quality0) (\(Int(qualityStats.quality0Percent))%)",
+                                            color: .red
+                                        )
+                                        
+                                        StatRow(
+                                            icon: "xmark.circle",
+                                            title: "Hard",
+                                            value: "\(qualityStats.quality1) (\(Int(qualityStats.quality1Percent))%)",
+                                            color: .orange
+                                        )
+                                        
+                                        StatRow(
+                                            icon: "hand.thumbsdown",
+                                            title: "Good",
+                                            value: "\(qualityStats.quality2) (\(Int(qualityStats.quality2Percent))%)",
+                                            color: .yellow
+                                        )
+                                        
+                                        StatRow(
+                                            icon: "hand.thumbsup",
+                                            title: "Easy",
+                                            value: "\(qualityStats.quality3) (\(Int(qualityStats.quality3Percent))%)",
+                                            color: .green
+                                        )
+                                    }
+                                } else {
+                                    // Fallback to old stats if quality stats aren't available
+                                    StatRow(
+                                        icon: "checkmark.circle",
+                                        title: "Correct",
+                                        value: "\(stats.correctResponses)",
+                                        color: .green
+                                    )
+                                    
+                                    StatRow(
+                                        icon: "xmark.circle",
+                                        title: "Incorrect",
+                                        value: "\(stats.incorrectResponses)",
+                                        color: .red
+                                    )
+                                    
+                                    StatRow(
+                                        icon: "percent",
+                                        title: "Accuracy",
+                                        value: "\(Int(stats.accuracy * 100))%",
+                                        color: .blue
+                                    )
+                                }
                                 
                                 if let avgTime = stats.averageResponseTime {
                                     StatRow(

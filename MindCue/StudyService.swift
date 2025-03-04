@@ -1162,6 +1162,53 @@ struct AnswerResponse: Codable {
     }
 }
 
+struct QualityStats: Codable {
+    let quality0: Int
+    let quality1: Int
+    let quality2: Int
+    let quality3: Int
+    let quality0Percent: Double
+    let quality1Percent: Double
+    let quality2Percent: Double
+    let quality3Percent: Double
+    let averageQuality: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case quality0, quality1, quality2, quality3
+        case quality0Percent, quality1Percent, quality2Percent, quality3Percent
+        case averageQuality
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        quality0 = try container.decodeIfPresent(Int.self, forKey: .quality0) ?? 0
+        quality1 = try container.decodeIfPresent(Int.self, forKey: .quality1) ?? 0
+        quality2 = try container.decodeIfPresent(Int.self, forKey: .quality2) ?? 0
+        quality3 = try container.decodeIfPresent(Int.self, forKey: .quality3) ?? 0
+        
+        quality0Percent = try container.decodeIfPresent(Double.self, forKey: .quality0Percent) ?? 0
+        quality1Percent = try container.decodeIfPresent(Double.self, forKey: .quality1Percent) ?? 0
+        quality2Percent = try container.decodeIfPresent(Double.self, forKey: .quality2Percent) ?? 0
+        quality3Percent = try container.decodeIfPresent(Double.self, forKey: .quality3Percent) ?? 0
+        
+        averageQuality = try container.decodeIfPresent(Double.self, forKey: .averageQuality) ?? 0
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(quality0, forKey: .quality0)
+        try container.encode(quality1, forKey: .quality1)
+        try container.encode(quality2, forKey: .quality2)
+        try container.encode(quality3, forKey: .quality3)
+        try container.encode(quality0Percent, forKey: .quality0Percent)
+        try container.encode(quality1Percent, forKey: .quality1Percent)
+        try container.encode(quality2Percent, forKey: .quality2Percent)
+        try container.encode(quality3Percent, forKey: .quality3Percent)
+        try container.encode(averageQuality, forKey: .averageQuality)
+    }
+}
+
 struct SessionStats: Codable {
     let totalCards: Int
     let cardsReviewed: Int
@@ -1170,6 +1217,7 @@ struct SessionStats: Codable {
     let accuracy: Double
     let averageResponseTime: Double?
     let duration: Double?
+    let qualityStats: QualityStats?
     
     // Add CodingKeys to handle potential differences in API response
     enum CodingKeys: String, CodingKey {
@@ -1180,6 +1228,7 @@ struct SessionStats: Codable {
         case accuracy
         case averageResponseTime
         case duration
+        case qualityStats
         // Alternative keys
         case total
         case reviewed
@@ -1241,36 +1290,33 @@ struct SessionStats: Codable {
             incorrectResponses = 0 // Default value
         }
         
-        // Try different possible keys for accuracy
-        if let acc = try container.decodeIfPresent(Double.self, forKey: .accuracy) {
-            accuracy = acc
+        // Calculate accuracy (if not provided)
+        if let accuracyValue = try container.decodeIfPresent(Double.self, forKey: .accuracy) {
+            accuracy = accuracyValue
         } else {
-            // Calculate accuracy if not provided
-            accuracy = cardsReviewed > 0 ? Double(correctResponses) / Double(cardsReviewed) : 0
+            // Calculate accuracy based on correct vs total reviewed
+            if cardsReviewed > 0 {
+                accuracy = Double(correctResponses) / Double(cardsReviewed)
+            } else {
+                accuracy = 0.0
+            }
         }
         
         // Try different possible keys for averageResponseTime
-        if let time = try container.decodeIfPresent(Double.self, forKey: .averageResponseTime) {
-            averageResponseTime = time
-        } else if let time = try container.decodeIfPresent(Double.self, forKey: .avg_time) {
-            averageResponseTime = time
-        } else if let time = try container.decodeIfPresent(Double.self, forKey: .average_time) {
-            averageResponseTime = time
-        } else {
-            averageResponseTime = nil
-        }
+        let avgTime1 = try? container.decodeIfPresent(Double.self, forKey: .averageResponseTime)
+        let avgTime2 = try? container.decodeIfPresent(Double.self, forKey: .avg_time)
+        let avgTime3 = try? container.decodeIfPresent(Double.self, forKey: .average_time)
+        averageResponseTime = avgTime1 ?? avgTime2 ?? avgTime3 ?? nil
         
         // Try different possible keys for duration
-        if let time = try container.decodeIfPresent(Double.self, forKey: .duration) {
-            duration = time
-        } else if let time = try container.decodeIfPresent(Double.self, forKey: .session_duration) {
-            duration = time
-        } else {
-            duration = nil
-        }
+        let dur1 = try? container.decodeIfPresent(Double.self, forKey: .duration)
+        let dur2 = try? container.decodeIfPresent(Double.self, forKey: .session_duration)
+        duration = dur1 ?? dur2 ?? nil
+        
+        // Try to decode quality stats
+        qualityStats = try container.decodeIfPresent(QualityStats.self, forKey: .qualityStats)
     }
     
-    // Add encode method to conform to Encodable
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(totalCards, forKey: .totalCards)
@@ -1280,6 +1326,7 @@ struct SessionStats: Codable {
         try container.encode(accuracy, forKey: .accuracy)
         try container.encodeIfPresent(averageResponseTime, forKey: .averageResponseTime)
         try container.encodeIfPresent(duration, forKey: .duration)
+        try container.encodeIfPresent(qualityStats, forKey: .qualityStats)
     }
 }
 
@@ -1297,6 +1344,13 @@ struct SessionStatsResponse: Codable {
         case sessionStats
     }
     
+    enum DataCodingKeys: String, CodingKey {
+        case sessionId, deckId, isActive, startTime, endTime
+        case durationMinutes, totalCards, newCards, reviewCards
+        case cardsReviewed, correctResponses, incorrectResponses
+        case accuracy, qualityStats
+    }
+    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
@@ -1309,12 +1363,64 @@ struct SessionStatsResponse: Codable {
             success = true // Default to true
         }
         
-        // Try different possible keys for stats
-        if let statsData = try container.decodeIfPresent(SessionStats.self, forKey: .stats) {
+        // Try to decode stats directly
+        if let statsData = try? container.decode(SessionStats.self, forKey: .stats) {
             stats = statsData
-        } else if let statsData = try container.decodeIfPresent(SessionStats.self, forKey: .data) {
+            return
+        }
+        
+        // Try to decode from data object
+        if let dataContainer = try? container.nestedContainer(keyedBy: DataCodingKeys.self, forKey: .data) {
+            // Create a temporary dictionary to hold the decoded values
+            var statsDict: [String: Any] = [:]
+            
+            // Decode basic stats
+            if let totalCards = try? dataContainer.decode(Int.self, forKey: .totalCards) {
+                statsDict["totalCards"] = totalCards
+            }
+            
+            if let cardsReviewed = try? dataContainer.decode(Int.self, forKey: .cardsReviewed) {
+                statsDict["cardsReviewed"] = cardsReviewed
+            }
+            
+            if let correctResponses = try? dataContainer.decode(Int.self, forKey: .correctResponses) {
+                statsDict["correctResponses"] = correctResponses
+            }
+            
+            if let incorrectResponses = try? dataContainer.decode(Int.self, forKey: .incorrectResponses) {
+                statsDict["incorrectResponses"] = incorrectResponses
+            }
+            
+            if let accuracy = try? dataContainer.decode(Double.self, forKey: .accuracy) {
+                statsDict["accuracy"] = accuracy
+            }
+            
+            // Try to decode qualityStats as a nested object
+            if let qualityStats = try? dataContainer.decode(QualityStats.self, forKey: .qualityStats) {
+                // Re-encode to JSON and then decode as part of the full stats object
+                let encoder = JSONEncoder()
+                if let qualityData = try? encoder.encode(qualityStats),
+                   let qualityDict = try? JSONSerialization.jsonObject(with: qualityData) as? [String: Any] {
+                    statsDict["qualityStats"] = qualityDict
+                }
+            }
+            
+            // Convert dict to JSON
+            if let jsonData = try? JSONSerialization.data(withJSONObject: statsDict) {
+                do {
+                    // Decode the stats from our reconstructed JSON
+                    stats = try JSONDecoder().decode(SessionStats.self, from: jsonData)
+                    return
+                } catch {
+                    print("Error decoding stats from reconstructed JSON: \(error)")
+                }
+            }
+        }
+        
+        // Try other keys
+        if let statsData = try? container.decode(SessionStats.self, forKey: .data) {
             stats = statsData
-        } else if let statsData = try container.decodeIfPresent(SessionStats.self, forKey: .sessionStats) {
+        } else if let statsData = try? container.decode(SessionStats.self, forKey: .sessionStats) {
             stats = statsData
         } else {
             throw DecodingError.valueNotFound(SessionStats.self, DecodingError.Context(

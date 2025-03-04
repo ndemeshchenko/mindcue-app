@@ -9,10 +9,12 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var authService = AuthService.shared
+    @StateObject private var profileService = ProfileService.shared
     @State private var isSideMenuShowing = false
     @State private var showSignUp = false
     @State private var showSignIn = false
     @State private var showProfile = false
+    @State private var showStudySession = false
     
     var body: some View {
         NavigationStack {
@@ -56,16 +58,19 @@ struct ContentView: View {
                     // Action buttons
                     VStack(spacing: 15) {
                         Button(action: {
-                            // Start learning action
                             if !authService.isAuthenticated {
                                 showSignIn = true
+                            } else if let recentPlan = profileService.recentPlan {
+                                // Continue with existing study plan
+                                showStudySession = true
                             } else {
-                                // Navigate to learning screen
+                                // Navigate to decks to start learning
+                                // (This would typically navigate to deck selection)
                             }
                         }) {
                             HStack {
-                                Image(systemName: "play.fill")
-                                Text("Start Learning")
+                                Image(systemName: authService.isAuthenticated && profileService.recentPlan != nil ? "arrow.right.circle.fill" : "play.fill")
+                                Text(authService.isAuthenticated && profileService.recentPlan != nil ? "Continue Studying" : "Start Learning")
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -125,8 +130,21 @@ struct ContentView: View {
                 ProfileView()
                     .environmentObject(authService)
             }
+            .fullScreenCover(isPresented: $showStudySession) {
+                if let recentPlan = profileService.recentPlan {
+                    NavigationView {
+                        StudySessionView(deckId: recentPlan.deckId._id, deckName: recentPlan.deckName)
+                    }
+                }
+            }
             .onAppear {
                 print("ContentView appeared, authentication state: \(authService.isAuthenticated)")
+                if authService.isAuthenticated {
+                    // Fetch profile data to get study plans
+                    Task {
+                        await profileService.fetchProfileData()
+                    }
+                }
             }
         }
     }
