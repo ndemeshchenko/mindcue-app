@@ -18,7 +18,7 @@ struct StudyCardView: View {
                 CardFace(
                     title: "Question",
                     content: card.front,
-                    examples: card.examples,
+                    examples: (card.examples?.count ?? 0) > 0 ? [card.examples![0]] : nil, // Only Dutch example
                     tags: nil,
                     isFlipped: isFlipped,
                     isFrontFace: true
@@ -28,7 +28,7 @@ struct StudyCardView: View {
                 CardFace(
                     title: "Answer",
                     content: card.back,
-                    examples: nil,
+                    examples: (card.examples?.count ?? 0) > 1 ? [card.examples![1]] : nil, // Only English example
                     tags: card.tags,
                     isFlipped: isFlipped,
                     isFrontFace: false
