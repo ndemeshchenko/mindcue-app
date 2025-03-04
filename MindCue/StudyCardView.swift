@@ -30,7 +30,7 @@ struct StudyCardView: View {
                     title: "Answer",
                     content: card.back,
                     examples: (card.examples?.count ?? 0) > 1 ? [card.examples![1]] : nil, // Only English example
-                    tags: card.tags,
+                    tags: nil,
                     isFlipped: isFlipped,
                     isFrontFace: false,
                     partOfSpeech: nil // No need to show Part of Speech on answer side
@@ -155,49 +155,59 @@ struct CardFace: View {
                     .font(.headline)
                     .foregroundColor(.secondary)
                 
-                if isFrontFace {
-                    // Word in blue with part of speech for question side
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                // Content area with standardized height and padding
+                VStack {
+                    if isFrontFace {
+                        // Word in blue with part of speech for question side
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(content)
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                                .multilineTextAlignment(.center)
+                            
+                            // Display part of speech if available
+                            if let pos = partOfSpeech {
+                                Text(pos)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.gray.opacity(0.2))
+                                    .cornerRadius(4)
+                            }
+                        }
+                    } else {
+                        // Regular display for answer side
                         Text(content)
                             .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
                             .multilineTextAlignment(.center)
-                        
-                        // Display part of speech if available
-                        if let pos = partOfSpeech {
-                            Text(pos)
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.gray.opacity(0.2))
-                                .cornerRadius(4)
-                        }
                     }
-                    .padding(.horizontal)
-                } else {
-                    // Regular display for answer side
-                    Text(content)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                        .padding()
                 }
+                .frame(height: 60) // Fixed height for content area
+                .padding(.horizontal)
                 
-                if let examples = examples, !examples.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Examples:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        ForEach(examples, id: \.self) { example in
-                            Text("• \(example)")
-                                .font(.body)
+                // Examples area with standardized position
+                VStack {
+                    if let examples = examples, !examples.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Examples:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            ForEach(examples, id: \.self) { example in
+                                Text(example)
+                                    .font(.body)
+                            }
                         }
+                        .padding(.horizontal)
+                    } else {
+                        // Empty space holder when no examples
+                        Spacer().frame(height: 0)
                     }
-                    .padding()
                 }
+                .frame(minHeight: 60) // Minimum height for examples area
                 
                 if let tags = tags, !tags.isEmpty {
                     HStack {
