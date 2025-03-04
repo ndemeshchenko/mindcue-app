@@ -63,12 +63,13 @@ class StudyCard: Identifiable, ObservableObject {
     let examples: [String]?
     let tags: [String]?
     let difficulty: Int
+    let partOfSpeech: String?
     
     // Session-specific state
     @Published var hasBeenReviewed: Bool = false
     @Published var lastResponseQuality: Int?
     
-    init(id: String, deckId: String, front: String, back: String, examples: [String]?, tags: [String]?, difficulty: Int) {
+    init(id: String, deckId: String, front: String, back: String, examples: [String]?, tags: [String]?, difficulty: Int, partOfSpeech: String? = nil) {
         self.id = id
         self.deckId = deckId
         self.front = front
@@ -76,6 +77,7 @@ class StudyCard: Identifiable, ObservableObject {
         self.examples = examples
         self.tags = tags
         self.difficulty = difficulty
+        self.partOfSpeech = partOfSpeech
     }
     
     // Helper to determine if the response was correct (quality >= 3 is considered correct)

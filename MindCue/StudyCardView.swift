@@ -21,7 +21,8 @@ struct StudyCardView: View {
                     examples: (card.examples?.count ?? 0) > 0 ? [card.examples![0]] : nil, // Only Dutch example
                     tags: nil,
                     isFlipped: isFlipped,
-                    isFrontFace: true
+                    isFrontFace: true,
+                    partOfSpeech: card.partOfSpeech // Use actual partOfSpeech property
                 )
                 
                 // Back card (Answer)
@@ -31,7 +32,8 @@ struct StudyCardView: View {
                     examples: (card.examples?.count ?? 0) > 1 ? [card.examples![1]] : nil, // Only English example
                     tags: card.tags,
                     isFlipped: isFlipped,
-                    isFrontFace: false
+                    isFrontFace: false,
+                    partOfSpeech: nil // No need to show Part of Speech on answer side
                 )
             }
             .frame(minHeight: 350)
@@ -135,6 +137,7 @@ struct CardFace: View {
     let tags: [String]?
     let isFlipped: Bool
     let isFrontFace: Bool
+    let partOfSpeech: String?
     
     var body: some View {
         // Only show the content when this face should be visible
@@ -152,11 +155,35 @@ struct CardFace: View {
                     .font(.headline)
                     .foregroundColor(.secondary)
                 
-                Text(content)
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                    .padding()
+                if isFrontFace {
+                    // Word in blue with part of speech for question side
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(content)
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.blue)
+                            .multilineTextAlignment(.center)
+                        
+                        // Display part of speech if available
+                        if let pos = partOfSpeech {
+                            Text(pos)
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(4)
+                        }
+                    }
+                    .padding(.horizontal)
+                } else {
+                    // Regular display for answer side
+                    Text(content)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                }
                 
                 if let examples = examples, !examples.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {

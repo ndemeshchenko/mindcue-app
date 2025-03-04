@@ -112,7 +112,8 @@ class StudyService: ObservableObject {
                         back: cardData.back,
                         examples: cardData.examples,
                         tags: cardData.tags,
-                        difficulty: cardData.difficulty ?? 3
+                        difficulty: cardData.difficulty ?? 3,
+                        partOfSpeech: cardData.partOfSpeech
                     )
                     
                     // Update session progress if available
@@ -794,6 +795,7 @@ struct CardData: Codable {
     let examples: [String]?
     let tags: [String]?
     let difficulty: Int?
+    let partOfSpeech: String?
     
     // Static logger for debugging
     private static let logger = Logger(subsystem: "com.mdem.MindCue", category: "CardData")
@@ -837,6 +839,9 @@ struct CardData: Codable {
             
             // Use Definition as back
             back = try fieldsContainer.decode(String.self, forKey: .Definition)
+            
+            // Try to decode Part-of-Speech if available
+            partOfSpeech = try? fieldsContainer.decode(String.self, forKey: .partOfSpeech)
             
             // Use Dutch and English as examples
             do {
