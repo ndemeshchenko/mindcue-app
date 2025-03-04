@@ -197,8 +197,6 @@ struct CardFace: View {
                         }
                     }
                     .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
                 }
                 
                 if let tags = tags, !tags.isEmpty {
